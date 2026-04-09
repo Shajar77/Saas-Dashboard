@@ -1,181 +1,62 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import {
-  IconCamera,
-  IconChartBar,
-  IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconFolder,
-  IconHelp,
-  IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
-  IconUsers,
-} from "@tabler/icons-react"
+  LayoutDashboard,
+  BarChart2,
+  Briefcase,
+  Users,
+  Settings,
+} from "lucide-react"
 
-import { NavDocuments } from '@/components/nav-documents'
-import { NavMain } from '@/components/nav-main'
-import { NavSecondary } from '@/components/nav-secondary'
-import { NavUser } from '@/components/nav-user'
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar'
-
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "#",
-      icon: IconDashboard,
-    },
-    {
-      title: "Lifecycle",
-      url: "#",
-      icon: IconListDetails,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: IconChartBar,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
-    },
-  ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
-    },
-  ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
-  ],
+export function Logo() {
+  return (
+    <div className="fixed left-8 top-8 z-50">
+      <Image
+        src="/Blue White Professional Minimal Brand Logo.png"
+        alt="Logo"
+        width={40}
+        height={40}
+        className="w-10 h-10 object-contain"
+      />
+    </div>
+  )
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+const navItems = [
+  { icon: LayoutDashboard, active: true },
+  { icon: BarChart2, active: false },
+  { icon: Briefcase, active: false },
+  { icon: Users, active: false },
+]
+
+export function AppSidebar() {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
-      </SidebarFooter>
-    </Sidebar>
+    <aside className="fixed left-6 top-1/2 -translate-y-1/2 z-50 h-auto min-h-[320px] w-20 bg-[#111111]/90 backdrop-blur-xl rounded-full shadow-2xl border border-white/10 py-4 flex flex-col items-center justify-center gap-4">
+      {navItems.map((item, index) => (
+        <a
+          key={index}
+          href="#"
+          className="relative flex items-center justify-center"
+        >
+          {item.active ? (
+            <div className="bg-[#D3FF33] text-black w-12 h-12 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(211,255,51,0.3)] transition-all duration-200">
+              <item.icon className="w-5 h-5" strokeWidth={2.5} />
+            </div>
+          ) : (
+            <div className="w-12 h-12 flex items-center justify-center text-gray-500 hover:text-white transition-colors">
+              <item.icon className="w-5 h-5" strokeWidth={2} />
+            </div>
+          )}
+        </a>
+      ))}
+      <a
+        href="#"
+        className="w-12 h-12 flex items-center justify-center text-gray-500 hover:text-white transition-colors"
+      >
+        <Settings className="w-5 h-5" strokeWidth={2} />
+      </a>
+    </aside>
   )
 }

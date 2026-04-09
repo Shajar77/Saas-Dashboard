@@ -1,12 +1,14 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { IconChevronUp, IconChevronDown, IconEdit, IconTrash } from "@tabler/icons-react"
+import { IconChevronUp, IconChevronDown } from "@tabler/icons-react"
+import { Edit2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export interface TableColumn {
   key: string
   label: string
   sortable?: boolean
+  render?: (row: any) => React.ReactNode
 }
 
 export interface CustomTableProps {
@@ -61,9 +63,9 @@ export function CustomTable({
 
   return (
     <div className="w-full flex justify-start flex-col gap-4">
-      <div className="overflow-hidden rounded-lg border border-white/10 bg-black/20 backdrop-blur-md">
+      <div className="overflow-hidden rounded-3xl border border-white/5 bg-[#1c1c1e]">
         <table className="w-full text-sm text-left align-middle border-collapse h-px table-auto">
-          <thead className="bg-white/5 border-b border-white/10 text-muted-foreground uppercase text-xs">
+          <thead className="bg-[#D3FF33] border-b border-[#D3FF33]/20 text-black uppercase text-xs">
             <tr>
               {columns.map((col) => (
                 <th
@@ -91,19 +93,19 @@ export function CustomTable({
             </tr>
           </thead>
           <tbody>
-            <AnimatePresence mode="popLayout">
-              {displayData.map((row, index) => (
+            <AnimatePresence mode="wait">
+              {displayData.map((row) => (
                 <motion.tr
-                  key={row.id || index}
-                  initial={{ opacity: 0, y: 10 }}
+                  key={row.id}
+                  initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className="p-4">
-                      {row[col.key]}
+                    <td key={col.key} className="py-5 px-4">
+                      {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}
                   {hasActions && (
@@ -114,9 +116,9 @@ export function CustomTable({
                             variant="ghost"
                             size="icon"
                             onClick={() => onEdit(row)}
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            className="h-8 w-8 bg-transparent text-gray-500 hover:text-blue-400 hover:bg-transparent"
                           >
-                            <IconEdit className="w-4 h-4" />
+                            <Edit2 className="w-4 h-4" />
                             <span className="sr-only">Edit</span>
                           </Button>
                         )}
@@ -125,9 +127,9 @@ export function CustomTable({
                             variant="ghost"
                             size="icon"
                             onClick={() => onDelete(row)}
-                            className="h-8 w-8 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"
+                            className="h-8 w-8 bg-transparent text-gray-500 hover:text-red-400 hover:bg-transparent"
                           >
-                            <IconTrash className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                             <span className="sr-only">Delete</span>
                           </Button>
                         )}

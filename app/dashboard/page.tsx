@@ -1,10 +1,10 @@
 "use client"
 
 import * as React from "react"
+import { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis } from "recharts"
 
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { AppSidebar, Logo } from "@/components/app-sidebar"
+import { TopNav } from "@/components/TopNav"
 import { Button } from "@/components/ui/button"
 
 import { CustomTable } from "@/components/CustomTable"
@@ -12,6 +12,19 @@ import { Modal } from "@/components/Modal"
 import { TextField, SelectField } from "@/components/CustomFormElements"
 
 import { fetchAssets, type Asset } from "@/utils/api"
+
+const mockAssets: Asset[] = [
+  { id: 1, name: "MacBook Pro M3", category: "Hardware", status: "Active" },
+  { id: 2, name: "Adobe Creative Suite", category: "Software", status: "Active" },
+  { id: 3, name: "Dell Monitor 27\"", category: "Hardware", status: "Active" },
+  { id: 4, name: "Office 365 License", category: "Software", status: "Active" },
+  { id: 5, name: "iPhone 15 Pro", category: "Hardware", status: "Inactive" },
+  { id: 6, name: "Slack Premium", category: "Software", status: "Active" },
+  { id: 7, name: "Webcam HD Pro", category: "Hardware", status: "Active" },
+  { id: 8, name: "AWS Credits", category: "Software", status: "Active" },
+  { id: 9, name: "Standing Desk", category: "Hardware", status: "Inactive" },
+  { id: 10, name: "Zoom Pro", category: "Software", status: "Active" },
+]
 
 export default function DashboardPage() {
   const [assets, setAssets] = React.useState<Asset[]>([])
@@ -24,6 +37,10 @@ export default function DashboardPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [editingAsset, setEditingAsset] = React.useState<Asset | null>(null)
+  
+  // Delete Confirmation State
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false)
+  const [assetToDelete, setAssetToDelete] = React.useState<Asset | null>(null)
 
   // Form State
   const [formData, setFormData] = React.useState({
@@ -34,9 +51,15 @@ export default function DashboardPage() {
 
   React.useEffect(() => {
     async function loadData() {
-      const data = await fetchAssets()
-      setAssets(data)
-      setLoading(false)
+      try {
+        const data = await fetchAssets()
+        setAssets(data.length > 0 ? data : mockAssets)
+      } catch (error) {
+        console.error("Failed to load assets:", error)
+        setAssets(mockAssets)
+      } finally {
+        setLoading(false)
+      }
     }
     loadData()
   }, [])
@@ -60,9 +83,21 @@ export default function DashboardPage() {
   }
 
   const handleDelete = (asset: Asset) => {
-    if (confirm(`Are you sure you want to delete ${asset.name}?`)) {
-      setAssets((prev) => prev.filter((a) => a.id !== asset.id))
+    setAssetToDelete(asset)
+    setDeleteModalOpen(true)
+  }
+  
+  const confirmDelete = () => {
+    if (assetToDelete) {
+      setAssets((prev) => prev.filter((a) => a.id !== assetToDelete.id))
+      setAssetToDelete(null)
+      setDeleteModalOpen(false)
     }
+  }
+  
+  const cancelDelete = () => {
+    setAssetToDelete(null)
+    setDeleteModalOpen(false)
   }
 
   const handleOpenAdd = () => {
@@ -92,7 +127,27 @@ export default function DashboardPage() {
     { key: "id", label: "ID", sortable: true },
     { key: "name", label: "Asset Name", sortable: true },
     { key: "category", label: "Category", sortable: true },
-    { key: "status", label: "Status", sortable: true },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      render: (row: Asset) => (
+        <span
+          className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border w-max ${
+            row.status === "Active"
+              ? "bg-[#D3FF33]/10 text-[#D3FF33] border-[#D3FF33]/20"
+              : "bg-red-500/10 text-red-500 border-red-500/20"
+          }`}
+        >
+          <div
+            className={`w-1.5 h-1.5 rounded-full ${
+              row.status === "Active" ? "bg-[#D3FF33]" : "bg-red-500"
+            }`}
+          />
+          {row.status}
+        </span>
+      ),
+    },
   ]
 
   const stats = {
@@ -101,229 +156,238 @@ export default function DashboardPage() {
     software: assets.filter((a) => a.category === "Software" && a.status === "Active").length,
   }
 
-  // Calculate financial metrics from assets
-  const activeAssetsCount = assets.filter((a) => a.status === "Active").length
-  const formatCurrency = (val: number) =>
-    val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
-  const balance = formatCurrency(assets.length * 1500)
-  const income = formatCurrency(activeAssetsCount * 800)
-  const expenses = formatCurrency((assets.length - activeAssetsCount) * 450)
-
   return (
-    <SidebarProvider
-      style={{
-        "--sidebar-width": "16rem",
-        "--header-height": "3rem",
-      } as React.CSSProperties}
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset className="bg-[#0a0a0a]">
-        <SiteHeader />
-
-        <div className="flex flex-1 flex-col overflow-x-hidden">
-          <div className="flex flex-1 flex-col gap-6 py-6 px-4 lg:px-6">
-            {/* Header Area */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Good morning</p>
-                <h1 className="text-3xl sm:text-4xl font-semibold text-white tracking-tight">
-                  Dashboard
-                </h1>
-              </div>
-              <div className="flex gap-6 sm:gap-10">
-                <div className="text-right">
-                  <p className="text-xs text-gray-400 mb-1">Balance</p>
-                  <p className="text-2xl sm:text-3xl font-medium text-white tracking-tight">
-                    {balance} $
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-400 mb-1">Income</p>
-                  <p className="text-2xl sm:text-3xl font-medium text-white tracking-tight">
-                    {income} $
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-400 mb-1">Expenses</p>
-                  <p className="text-2xl sm:text-3xl font-medium text-white tracking-tight">
-                    {expenses} $
-                  </p>
-                </div>
-              </div>
-            </div>
-
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <Logo />
+      <AppSidebar />
+      
+      {/* TopNav aligned with cards */}
+      <div className="ml-32 pt-4 px-4 lg:px-6">
+        <TopNav />
+      </div>
+      
+      <main className="ml-32 min-h-screen">
+        <div className="flex flex-1 flex-col gap-6 py-6 px-4 lg:px-6">
             {/* Top Bento Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Left 1/3 - Stacked Percentage Cards */}
+              {/* Left 1/3 - Stacked Cards */}
               <div className="flex flex-col gap-4">
-                <div className="rounded-3xl p-5 bg-[#2A2B2F] flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-4xl sm:text-5xl font-medium tracking-tight text-white">
-                      65%
+                {/* Card 1: License Utilization */}
+                <div className="rounded-3xl p-5 bg-[#2A2B2F]/80 backdrop-blur-md border border-white/10 flex items-center justify-between">
+                  <div className="flex flex-col flex-1">
+                    <span className="text-3xl sm:text-4xl font-medium tracking-tight text-white">
+                      82%
                     </span>
-                    <span className="text-xs mt-1 text-gray-400">Transfer</span>
+                    <span className="text-xs mt-1 text-gray-400">License Utilization</span>
+                    <span className="text-[10px] text-gray-500 mt-1">412 / 500 Seats</span>
                   </div>
-                  <span className="text-xs text-gray-500">29/user</span>
+                  <div className="w-20 h-12">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={[{v:30},{v:45},{v:35},{v:60},{v:55},{v:82},{v:78}]}>
+                        <defs>
+                          <linearGradient id="utilGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#9CA3AF" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#9CA3AF" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <Area type="monotone" dataKey="v" stroke="#9CA3AF" strokeWidth={2} fill="url(#utilGrad)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-                <div className="rounded-3xl p-5 bg-[#D3FF33] flex items-center justify-between">
+                {/* Card 2: Hardware Distribution */}
+                <div className="rounded-3xl p-5 bg-[#D3FF33]/90 backdrop-blur-md border border-white/20 flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-4xl sm:text-5xl font-medium tracking-tight text-black">
-                      31%
+                    <span className="text-3xl sm:text-4xl font-medium tracking-tight text-black">
+                      128
                     </span>
-                    <span className="text-xs mt-1 text-black/70">Receive</span>
+                    <span className="text-xs mt-1 text-black/70">Inventory</span>
+                    <span className="text-[10px] text-black/50 mt-1">Items Assigned</span>
                   </div>
-                  <span className="text-xs text-black/50">8/user</span>
+                  <div className="w-16 h-10">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={[{v:45},{v:80},{v:60}]}>
+                        <Bar dataKey="v" fill="#000000" radius={[4,4,0,0]} barSize={12} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
 
-              {/* Right 2/3 - Analytics Blue Card */}
-              <div className="lg:col-span-2 rounded-3xl p-6 bg-[#1A66FF] flex flex-col justify-between">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-white/70 mb-1">Analytics</p>
-                    <div className="flex items-center gap-3">
-                      <span className="text-5xl sm:text-6xl font-medium tracking-tight text-white">
-                        78%
+              {/* Right 2/3 - Cloud Infrastructure Spend */}
+              <div className="lg:col-span-2 rounded-3xl p-6 bg-[#1A66FF]/85 backdrop-blur-md border border-white/15 flex flex-col justify-between">
+                <div className="flex items-start justify-between h-full">
+                  <div className="flex-1 pr-4">
+                    <p className="text-xs text-white/70 mb-1">Cloud Infrastructure Spend</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl sm:text-5xl font-medium tracking-tight text-white">
+                        $42,800
                       </span>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-white/90 bg-white/20 px-2 py-1 rounded">
-                          Increase
-                        </span>
+                      <span className="text-xs text-white/80">12% increase</span>
+                    </div>
+                    {/* Area Chart */}
+                    <div className="w-full h-24 mt-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={[{m:'Jun',v:32},{m:'Jul',v:35},{m:'Aug',v:38},{m:'Sep',v:40},{m:'Oct',v:39},{m:'Nov',v:42.8}]}>
+                          <defs>
+                            <linearGradient id="cloudGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <Area type="monotone" dataKey="v" stroke="#FFFFFF" strokeWidth={2} fill="url(#cloudGradient)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  {/* Lifecycle Status Donut */}
+                  <div className="flex flex-col items-center justify-center">
+                    <p className="text-[10px] text-white/70 mb-3">Lifecycle Status</p>
+                    <div className="relative w-24 h-24">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie 
+                            data={[{v:65},{v:35}]} 
+                            dataKey="v" 
+                            innerRadius={32} 
+                            outerRadius={40} 
+                            startAngle={90} 
+                            endAngle={-270}
+                            stroke="none"
+                          >
+                            <Cell fill="#D3FF33" />
+                            <Cell fill="rgba(255,255,255,0.15)" />
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-lg font-semibold text-white">65%</span>
                       </div>
                     </div>
+                    <p className="text-[10px] text-white/50 mt-2">Active</p>
                   </div>
-                  {/* CSS Donut Placeholder */}
-                  <div className="relative w-24 h-24 sm:w-32 sm:h-32">
-                    <div className="absolute inset-0 rounded-full border-[8px] border-white/20"></div>
-                    <div
-                      className="absolute inset-0 rounded-full border-[8px] border-white"
-                      style={{
-                        clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
-                        transform: "rotate(-90deg)",
-                      }}
-                    ></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm text-white font-medium">78%</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <span className="text-[10px] text-white/80 bg-white/10 px-3 py-1.5 rounded-full">
-                    Year-end storage improvements
-                  </span>
-                  <span className="text-[10px] text-white/80 bg-white/10 px-3 py-1.5 rounded-full">
-                    Increase in the property investment branch
-                  </span>
                 </div>
               </div>
             </div>
 
             {/* Bottom Bento Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Cash Card */}
-              <div className="rounded-3xl p-5 bg-[#2A2B2F] flex flex-col justify-between">
+              {/* Card 4: Asset Valuation */}
+              <div className="rounded-3xl p-5 bg-[#2A2B2F]/80 backdrop-blur-md border border-white/10 flex flex-col justify-between">
                 <div>
-                  <p className="text-xs text-gray-400 mb-1">Cash</p>
+                  <p className="text-xs text-gray-400 mb-1">Asset Valuation</p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl sm:text-4xl font-medium tracking-tight text-white">
-                      {stats.total * 1200 + 2500}
+                      $205,400
                     </span>
                     <span className="text-xs text-[#D3FF33]">USD</span>
                   </div>
-                  <p className="text-lg text-white font-medium mt-1">+36%</p>
-                  <p className="text-[10px] text-gray-500">grow since last week</p>
+                  <p className="text-sm text-white/80 mt-1">+4.2% Growth</p>
                 </div>
-                {/* Mini bar chart */}
-                <div className="flex items-end gap-1 mt-4 h-16">
-                  <div className="w-4 bg-[#3A3B3F] rounded-sm h-6"></div>
-                  <div className="w-4 bg-[#3A3B3F] rounded-sm h-10"></div>
-                  <div className="w-4 bg-white rounded-sm h-14"></div>
-                  <div className="w-4 bg-[#1A66FF] rounded-sm h-16"></div>
+                {/* Gradient Bar Chart */}
+                <div className="w-full h-12 mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={[{v:40},{v:55},{v:45},{v:70},{v:60},{v:85}]}>
+                      <defs>
+                        <linearGradient id="valGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#D3FF33" />
+                          <stop offset="100%" stopColor="#1A66FF" />
+                        </linearGradient>
+                      </defs>
+                      <Bar dataKey="v" fill="url(#valGrad)" radius={[2,2,0,0]} barSize={6} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Period Analytic White Card */}
-              <div className="rounded-3xl p-5 bg-white flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Period Analytic</p>
-                    <p className="text-[10px] text-gray-400">3 Month</p>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-[#D3FF33] flex items-center justify-center">
-                    <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </div>
-                </div>
+              {/* Card 5: Renewal Health */}
+              <div className="rounded-3xl p-5 bg-white/95 backdrop-blur-md border border-white/30 flex flex-col justify-between">
                 <div>
-                  <p className="text-[10px] text-gray-400 mb-1">User Authorized</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl sm:text-5xl font-medium tracking-tight text-black">
-                      18,785
+                  <p className="text-xs text-gray-500 mb-1">Renewal Health</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl sm:text-6xl font-medium tracking-tight text-black">
+                      94
                     </span>
-                    <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                    <span className="text-lg text-gray-400">/100</span>
                   </div>
+                </div>
+                {/* Progress Bar */}
+                <div className="mt-4">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#D3FF33] rounded-full" style={{ width: '94%' }} />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-2">8 assets need attention</p>
                 </div>
               </div>
 
-              {/* Payment Transaction Card */}
-              <div className="rounded-3xl p-5 bg-[#2A2B2F] flex flex-col">
+              {/* Card 6: Top Asset Spend */}
+              <div className="rounded-3xl p-5 bg-[#2A2B2F]/80 backdrop-blur-md border border-white/10 flex flex-col">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-[#3A3B3F] flex items-center justify-center">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <div className="w-8 h-8 rounded-lg bg-[#D3FF33] flex items-center justify-center">
+                    <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400">Payment</p>
-                    <p className="text-xs text-white">Transaction</p>
+                    <p className="text-xs text-white font-medium">Top Asset Spend</p>
+                    <p className="text-[10px] text-gray-400">Monthly SaaS Costs</p>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  {assets.slice(0, 3).map((asset) => (
-                    <div key={asset.id} className="flex items-center justify-between">
+                  {[
+                    { name: "AWS Infrastructure", cost: "$1,240" },
+                    { name: "Salesforce CRM", cost: "$860" },
+                    { name: "GitHub Enterprise", cost: "$420" },
+                    { name: "Slack Pro", cost: "$310" },
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between">
                       <span className="text-xs text-gray-400 truncate max-w-[120px]">
-                        {asset.name}
+                        {item.name}
                       </span>
-                      <span className="text-xs text-white">{(asset.id * 120).toLocaleString()} $</span>
+                      <span className="text-xs text-[#D3FF33] font-medium">{item.cost}</span>
                     </div>
                   ))}
-                  {assets.length === 0 && (
-                    <p className="text-xs text-gray-500">No transactions</p>
-                  )}
                 </div>
               </div>
             </div>
 
             {/* Data Area - Search, Filter, Add Button, Table */}
             <div className="mt-4 space-y-4">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <TextField
-                    label=""
-                    placeholder="Search assets..."
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                  />
-                  <div className="w-48 mt-[-8px]">
-                    <SelectField
-                      label=""
-                      value={filterCategory}
-                      onChange={setFilterCategory}
-                      options={[
-                        { label: "All Categories", value: "All" },
-                        { label: "Hardware", value: "Hardware" },
-                        { label: "Software", value: "Software" },
-                      ]}
-                    />
+              {/* Sleek Controls Container */}
+              <div className="bg-[#1c1c1e] p-4 rounded-3xl border border-white/5">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                    {/* Search with rounded styling */}
+                    <div className="flex-1 sm:w-64">
+                      <TextField
+                        label=""
+                        placeholder="Search assets..."
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                      />
+                    </div>
+                    {/* Filter with rounded styling */}
+                    <div className="w-40 mt-[-8px]">
+                      <SelectField
+                        label=""
+                        value={filterCategory}
+                        onChange={setFilterCategory}
+                        options={[
+                          { label: "All Categories", value: "All" },
+                          { label: "Hardware", value: "Hardware" },
+                          { label: "Software", value: "Software" },
+                        ]}
+                      />
+                    </div>
                   </div>
+                  {/* Branded Add Button */}
+                  <Button
+                    onClick={handleOpenAdd}
+                    className="bg-[#1A66FF] text-white hover:bg-blue-600 rounded-xl h-10 px-6 font-medium w-full sm:w-auto"
+                  >
+                    + Add Asset
+                  </Button>
                 </div>
-                <Button onClick={handleOpenAdd} className="w-full sm:w-auto">
-                  Add Asset
-                </Button>
               </div>
 
               {/* Centralized Table Component */}
@@ -344,9 +408,8 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-        </div>
 
-        {/* Centralized Reusable Modal */}
+        {/* Modal */}
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -392,7 +455,28 @@ export default function DashboardPage() {
             </div>
           </div>
         </Modal>
-      </SidebarInset>
-    </SidebarProvider>
+        
+        {/* Delete Confirmation Modal */}
+        <Modal isOpen={deleteModalOpen} onClose={cancelDelete} title="Confirm Delete">
+          <div className="space-y-4">
+            <p className="text-gray-400">
+              Are you sure you want to delete <span className="text-white font-medium">{assetToDelete?.name}</span>?
+            </p>
+            <p className="text-sm text-gray-500">This action cannot be undone.</p>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={cancelDelete}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={confirmDelete} 
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      </main>
+    </div>
   )
 }
