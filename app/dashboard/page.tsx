@@ -72,6 +72,83 @@ export default function DashboardPage() {
     })
   }, [assets, searchQuery, filterCategory])
 
+  // Dynamic statistics based on assets
+  const stats = React.useMemo(() => {
+    const total = assets.length
+    const active = assets.filter(a => a.status === "Active").length
+    const inactive = assets.filter(a => a.status === "Inactive").length
+    const hardware = assets.filter(a => a.category === "Hardware").length
+    const software = assets.filter(a => a.category === "Software").length
+    
+    // License utilization (assume 500 max seats)
+    const maxSeats = 500
+    const licenseUtil = total > 0 ? Math.round((active / maxSeats) * 100) : 0
+    
+    // Asset valuation (mock calculation: hardware $2000 avg, software $500 avg)
+    const valuation = hardware * 2000 + software * 500
+    
+    // Cloud spend (mock: $300 per software asset)
+    const cloudSpend = software * 300 + hardware * 50
+    
+    // Generate dynamic chart data based on assets
+    const inventoryChart = [
+      { v: Math.max(20, hardware * 5) },
+      { v: Math.max(30, software * 8) },
+      { v: Math.max(25, total * 3) },
+      { v: Math.max(40, active * 4) },
+      { v: Math.max(35, inactive * 10) },
+      { v: Math.max(50, total * 5) },
+      { v: Math.max(45, hardware * 6) },
+      { v: Math.max(60, software * 7) },
+    ]
+    
+    const valuationChart = [
+      { v: Math.max(30, valuation / 10000) },
+      { v: Math.max(40, hardware * 10) },
+      { v: Math.max(35, software * 15) },
+      { v: Math.max(50, total * 8) },
+      { v: Math.max(45, active * 9) },
+      { v: Math.max(70, inactive * 20) },
+      { v: Math.max(60, hardware * 12) },
+      { v: Math.max(80, software * 18) },
+      { v: Math.max(75, total * 10) },
+      { v: Math.max(95, valuation / 5000) },
+    ]
+    
+    const cloudSpendChart = [
+      { m: "Jan", v: cloudSpend * 0.8 },
+      { m: "Feb", v: cloudSpend * 0.85 },
+      { m: "Mar", v: cloudSpend * 0.9 },
+      { m: "Apr", v: cloudSpend * 0.95 },
+      { m: "May", v: cloudSpend },
+      { m: "Jun", v: cloudSpend * 1.05 },
+    ]
+    
+    // Top asset spend (sorted by value)
+    const topSpend = [
+      { name: "Hardware", value: hardware * 2000, percent: 80 },
+      { name: "Software", value: software * 500, percent: 60 },
+      { name: "Cloud", value: cloudSpend, percent: 40 },
+    ].sort((a, b) => b.value - a.value)
+    
+    return {
+      total,
+      active,
+      inactive,
+      hardware,
+      software,
+      licenseUtil: Math.min(licenseUtil, 100),
+      licenseSeats: active,
+      valuation,
+      cloudSpend,
+      renewalHealth: total > 0 ? Math.round((active / total) * 100) : 0,
+      inventoryChart,
+      valuationChart,
+      cloudSpendChart,
+      topSpend,
+    }
+  }, [assets])
+
   const handleEdit = (asset: Asset) => {
     setEditingAsset(asset)
     setFormData({
@@ -125,7 +202,7 @@ export default function DashboardPage() {
 
   const columns = [
     { key: "id", label: "ID", sortable: true },
-    { key: "name", label: "Asset Name", sortable: true },
+    { key: "name", label: "Assets", sortable: true },
     { key: "category", label: "Category", sortable: true },
     {
       key: "status",
@@ -133,196 +210,202 @@ export default function DashboardPage() {
       sortable: true,
       render: (row: Asset) => (
         <span
-          className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border w-max ${
+          className={`inline-flex items-center px-2 md:px-3 py-0.5 md:py-1 text-[10px] md:text-xs font-medium rounded-full border w-max whitespace-nowrap ${
             row.status === "Active"
               ? "bg-[#D3FF33]/10 text-[#D3FF33] border-[#D3FF33]/20"
               : "bg-red-500/10 text-red-500 border-red-500/20"
           }`}
         >
-          <div
-            className={`w-1.5 h-1.5 rounded-full ${
-              row.status === "Active" ? "bg-[#D3FF33]" : "bg-red-500"
-            }`}
-          />
           {row.status}
         </span>
       ),
     },
   ]
 
-  const stats = {
-    total: assets.length,
-    hardware: assets.filter((a) => a.category === "Hardware" && a.status === "Active").length,
-    software: assets.filter((a) => a.category === "Software" && a.status === "Active").length,
-  }
-
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
-      <Logo />
+      {/* Logo hidden on mobile (shown in TopNav instead) */}
+      <div className="hidden md:block">
+        <Logo />
+      </div>
       <AppSidebar />
       
       {/* TopNav aligned with cards */}
-      <div className="ml-32 pt-4 px-4 lg:px-6">
+      <div className="ml-0 md:ml-32 pt-4 px-4 lg:px-6">
         <TopNav />
       </div>
       
-      <main className="ml-32 min-h-screen">
-        <div className="flex flex-1 flex-col gap-6 py-6 px-4 lg:px-6">
+      <main className="ml-0 md:ml-32 min-h-screen">
+        <div className="flex flex-1 flex-col gap-4 py-4 md:py-6 px-4 lg:px-6">
             {/* Top Bento Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Left 1/3 - Stacked Cards */}
-              <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* Left 4 cols - Stacked Cards */}
+              <div className="lg:col-span-4 flex flex-col gap-4">
                 {/* Card 1: License Utilization */}
-                <div className="rounded-3xl p-5 bg-[#2A2B2F]/80 backdrop-blur-md border border-white/10 flex items-center justify-between">
-                  <div className="flex flex-col flex-1">
-                    <span className="text-3xl sm:text-4xl font-medium tracking-tight text-white">
-                      82%
+                <div className="rounded-3xl p-4 md:p-5 bg-[#2A2B2F]/80 backdrop-blur-md border border-white/10 flex items-center justify-between min-h-[100px]">
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
+                      {stats.licenseUtil}%
                     </span>
-                    <span className="text-xs mt-1 text-gray-400">License Utilization</span>
-                    <span className="text-[10px] text-gray-500 mt-1">412 / 500 Seats</span>
+                    <span className="text-xs mt-0.5 text-gray-400">License Utilization</span>
+                    <span className="text-[10px] text-gray-500 mt-0.5">{stats.licenseSeats} / 500 Seats</span>
                   </div>
-                  <div className="w-20 h-12">
+                  <div className="w-24 md:w-28 h-14 md:h-16 ml-3">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={[{v:30},{v:45},{v:35},{v:60},{v:55},{v:82},{v:78}]}>
+                      <AreaChart data={[{v:30},{v:45},{v:35},{v:60},{v:55},{v:82},{v:78}]} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
                         <defs>
                           <linearGradient id="utilGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#9CA3AF" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#9CA3AF" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#D3FF33" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="#D3FF33" stopOpacity={0.05}/>
                           </linearGradient>
                         </defs>
-                        <Area type="monotone" dataKey="v" stroke="#9CA3AF" strokeWidth={2} fill="url(#utilGrad)" />
+                        <Area type="monotone" dataKey="v" stroke="#D3FF33" strokeWidth={2.5} fill="url(#utilGrad)" animationDuration={1500} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-                {/* Card 2: Hardware Distribution */}
-                <div className="rounded-3xl p-5 bg-[#D3FF33]/90 backdrop-blur-md border border-white/20 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-3xl sm:text-4xl font-medium tracking-tight text-black">
-                      128
+                {/* Card 2: Inventory */}
+                <div className="rounded-3xl p-4 md:p-5 bg-gradient-to-br from-[#D3FF33] to-[#b8e62c] backdrop-blur-md border border-[#D3FF33]/40 flex items-center justify-between min-h-[100px] shadow-lg shadow-[#D3FF33]/10">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-3xl md:text-4xl font-bold tracking-tight text-black">
+                      {stats.total}
                     </span>
-                    <span className="text-xs mt-1 text-black/70">Inventory</span>
-                    <span className="text-[10px] text-black/50 mt-1">Items Assigned</span>
+                    <span className="text-[10px] font-medium text-black/60 uppercase tracking-wider mt-1">Inventory</span>
+                    <span className="text-[10px] text-black/50 mt-0.5">{stats.active} Active · {stats.inactive} Inactive</span>
                   </div>
-                  <div className="w-16 h-10">
+                  <div className="w-24 md:w-28 h-14 md:h-16 ml-3">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={[{v:45},{v:80},{v:60}]}>
-                        <Bar dataKey="v" fill="#000000" radius={[4,4,0,0]} barSize={12} />
+                      <BarChart data={stats.inventoryChart} margin={{ top: 5, right: 0, bottom: 2, left: 0 }} barCategoryGap="1%">
+                        <defs>
+                          <linearGradient id="invGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#000000" stopOpacity={0.8}/>
+                            <stop offset="100%" stopColor="#000000" stopOpacity={0.3}/>
+                          </linearGradient>
+                        </defs>
+                        <Bar dataKey="v" fill="url(#invGrad)" radius={[2,2,0,0]} barSize={7} animationDuration={1200} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
               </div>
 
-              {/* Right 2/3 - Cloud Infrastructure Spend */}
-              <div className="lg:col-span-2 rounded-3xl p-6 bg-[#1A66FF]/85 backdrop-blur-md border border-white/15 flex flex-col justify-between">
-                <div className="flex items-start justify-between h-full">
-                  <div className="flex-1 pr-4">
-                    <p className="text-xs text-white/70 mb-1">Cloud Infrastructure Spend</p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl sm:text-5xl font-medium tracking-tight text-white">
-                        $42,800
+              {/* Right 8 cols - Cloud Infrastructure Spend */}
+              <div className="lg:col-span-8 rounded-3xl p-4 md:p-6 bg-gradient-to-br from-[#1A66FF] to-[#0d52d9] backdrop-blur-md border border-white/20 flex flex-col min-h-[216px]">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white/80 mb-1">Cloud Infrastructure Spend</p>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-3xl md:text-5xl font-semibold tracking-tight text-white">
+                        ${stats.cloudSpend.toLocaleString()}
                       </span>
-                      <span className="text-xs text-white/80">12% increase</span>
-                    </div>
-                    {/* Area Chart */}
-                    <div className="w-full h-24 mt-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={[{m:'Jun',v:32},{m:'Jul',v:35},{m:'Aug',v:38},{m:'Sep',v:40},{m:'Oct',v:39},{m:'Nov',v:42.8}]}>
-                          <defs>
-                            <linearGradient id="cloudGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <Area type="monotone" dataKey="v" stroke="#FFFFFF" strokeWidth={2} fill="url(#cloudGradient)" />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                      <span className="text-xs text-[#D3FF33] bg-[#D3FF33]/10 px-2 py-0.5 rounded-full">+12%</span>
                     </div>
                   </div>
-                  {/* Lifecycle Status Donut */}
-                  <div className="flex flex-col items-center justify-center">
-                    <p className="text-[10px] text-white/70 mb-3">Lifecycle Status</p>
-                    <div className="relative w-24 h-24">
+                  {/* Status Donut - Shows Active Assets % */}
+                  <div className="flex flex-col items-center justify-center ml-4">
+                    <div className="relative w-20 h-20 md:w-24 md:h-24">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie 
-                            data={[{v:65},{v:35}]} 
+                            data={[{v:stats.renewalHealth},{v:100-stats.renewalHealth}]} 
                             dataKey="v" 
-                            innerRadius={32} 
-                            outerRadius={40} 
+                            innerRadius={28} 
+                            outerRadius={36} 
                             startAngle={90} 
                             endAngle={-270}
                             stroke="none"
+                            paddingAngle={2}
                           >
-                            <Cell fill="#D3FF33" />
+                            <Cell fill="#FFFFFF" />
                             <Cell fill="rgba(255,255,255,0.15)" />
                           </Pie>
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-lg font-semibold text-white">65%</span>
+                        <span className="text-base md:text-lg font-semibold text-white">{stats.renewalHealth}%</span>
                       </div>
                     </div>
-                    <p className="text-[10px] text-white/50 mt-2">Active</p>
                   </div>
+                </div>
+                {/* Area Chart */}
+                <div className="flex-1 w-full min-h-[80px] mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={stats.cloudSpendChart} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                      <defs>
+                        <linearGradient id="cloudGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.35}/>
+                          <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="v" stroke="#FFFFFF" strokeWidth={2.5} fill="url(#cloudGradient)" animationDuration={2000} />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
 
             {/* Bottom Bento Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Card 4: Asset Valuation */}
-              <div className="rounded-3xl p-5 bg-[#2A2B2F]/80 backdrop-blur-md border border-white/10 flex flex-col justify-between">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Asset Valuation</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl sm:text-4xl font-medium tracking-tight text-white">
-                      $205,400
-                    </span>
-                    <span className="text-xs text-[#D3FF33]">USD</span>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* Card 4: Asset Valuation - 4 cols */}
+              <div className="lg:col-span-4 rounded-3xl p-4 md:p-5 bg-[#2A2B2F]/80 backdrop-blur-md border border-white/10 flex flex-col min-h-[200px] md:min-h-[250px]">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Asset Valuation</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
+                        ${stats.valuation.toLocaleString()}
+                      </span>
+                      <span className="text-xs text-[#D3FF33]">USD</span>
+                    </div>
                   </div>
-                  <p className="text-sm text-white/80 mt-1">+4.2% Growth</p>
+                  <span className="text-xs text-[#D3FF33] bg-[#D3FF33]/10 px-2 py-1 rounded-full">+4.2%</span>
                 </div>
                 {/* Gradient Bar Chart */}
-                <div className="w-full h-12 mt-4">
+                <div className="flex-1 w-full min-h-[80px] mt-4">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[{v:40},{v:55},{v:45},{v:70},{v:60},{v:85}]}>
+                    <BarChart data={stats.valuationChart} margin={{ top: 5, right: 0, bottom: 5, left: 0 }} barCategoryGap="1%">
                       <defs>
                         <linearGradient id="valGrad" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#D3FF33" />
                           <stop offset="100%" stopColor="#1A66FF" />
                         </linearGradient>
                       </defs>
-                      <Bar dataKey="v" fill="url(#valGrad)" radius={[2,2,0,0]} barSize={6} />
+                      <Bar dataKey="v" fill="url(#valGrad)" radius={[3,3,0,0]} barSize={12} animationDuration={1200} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Card 5: Renewal Health */}
-              <div className="rounded-3xl p-5 bg-white/95 backdrop-blur-md border border-white/30 flex flex-col justify-between">
+              {/* Card 5: Renewal Health - 4 cols */}
+              <div className="lg:col-span-4 rounded-3xl p-4 md:p-5 bg-white/95 backdrop-blur-md border border-white/30 flex flex-col min-h-[200px] md:min-h-[250px]">
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Renewal Health</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl sm:text-6xl font-medium tracking-tight text-black">
-                      94
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl md:text-5xl font-semibold tracking-tight text-black">
+                      {stats.renewalHealth}
                     </span>
-                    <span className="text-lg text-gray-400">/100</span>
+                    <span className="text-sm text-gray-400">/100</span>
                   </div>
                 </div>
                 {/* Progress Bar */}
-                <div className="mt-4">
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#D3FF33] rounded-full" style={{ width: '94%' }} />
+                <div className="mt-auto pt-4">
+                  <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                    <span>Health Score</span>
+                    <span>{stats.renewalHealth >= 90 ? 'Excellent' : stats.renewalHealth >= 70 ? 'Good' : 'Needs Attention'}</span>
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-2">8 assets need attention</p>
+                  <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#D3FF33] to-[#a8cc29] rounded-full transition-all duration-1000" style={{ width: `${stats.renewalHealth}%` }} />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400"></span>
+                    {stats.inactive} assets need attention
+                  </p>
                 </div>
               </div>
 
-              {/* Card 6: Top Asset Spend */}
-              <div className="rounded-3xl p-5 bg-[#2A2B2F]/80 backdrop-blur-md border border-white/10 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
+              {/* Card 6: Top Asset Spend - 4 cols */}
+              <div className="lg:col-span-4 rounded-3xl p-4 md:p-5 bg-[#2A2B2F]/80 backdrop-blur-md border border-white/10 flex flex-col min-h-[200px] md:min-h-[250px]">
+                <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-[#D3FF33] flex items-center justify-center">
                     <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -333,18 +416,25 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-gray-400">Monthly SaaS Costs</p>
                   </div>
                 </div>
-                <div className="space-y-3">
+                {/* Mini horizontal bar chart */}
+                <div className="flex-1 flex flex-col justify-center gap-2">
                   {[
-                    { name: "AWS Infrastructure", cost: "$1,240" },
-                    { name: "Salesforce CRM", cost: "$860" },
-                    { name: "GitHub Enterprise", cost: "$420" },
-                    { name: "Slack Pro", cost: "$310" },
+                    { name: "AWS Infrastructure", cost: "$1,240", pct: 100 },
+                    { name: "Salesforce CRM", cost: "$860", pct: 70 },
+                    { name: "GitHub Enterprise", cost: "$420", pct: 35 },
+                    { name: "Slack Pro", cost: "$310", pct: 25 },
                   ].map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400 truncate max-w-[120px]">
-                        {item.name}
-                      </span>
-                      <span className="text-xs text-[#D3FF33] font-medium">{item.cost}</span>
+                    <div key={idx} className="group">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-gray-400 truncate max-w-[100px]">{item.name}</span>
+                        <span className="text-[#D3FF33] font-medium">{item.cost}</span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-[#D3FF33] to-[#1A66FF] rounded-full transition-all duration-700"
+                          style={{ width: `${item.pct}%` }}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -354,39 +444,53 @@ export default function DashboardPage() {
             {/* Data Area - Search, Filter, Add Button, Table */}
             <div className="mt-4 space-y-4">
               {/* Sleek Controls Container */}
-              <div className="bg-[#1c1c1e] p-4 rounded-3xl border border-white/5">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 w-full sm:w-auto">
-                    {/* Search with rounded styling */}
-                    <div className="flex-1 sm:w-64">
-                      <TextField
-                        label=""
-                        placeholder="Search assets..."
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                      />
+              <div className="bg-[#1c1c1e]/80 backdrop-blur-md p-3 md:p-4 rounded-2xl border border-white/10 shadow-xl">
+                <div className="flex flex-col gap-3">
+                  {/* Top row: Search and Add button */}
+                  <div className="flex items-center gap-2">
+                    {/* Search with icon */}
+                    <div className="flex-1 min-w-0">
+                      <div className="relative group">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-[#D3FF33] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                          type="text"
+                          placeholder="Search assets..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full bg-[#0a0a0a]/80 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-[#D3FF33]/50 focus:ring-1 focus:ring-[#D3FF33]/20 transition-all"
+                        />
+                      </div>
                     </div>
-                    {/* Filter with rounded styling */}
-                    <div className="w-40 mt-[-8px]">
-                      <SelectField
-                        label=""
+                    {/* Add Button - Icon only on mobile */}
+                    <Button
+                      onClick={handleOpenAdd}
+                      className="bg-[#1A66FF] text-white hover:bg-[#1557d9] hover:scale-105 active:scale-95 rounded-xl h-10 w-10 sm:h-11 sm:w-auto sm:px-5 font-semibold shrink-0 shadow-lg shadow-[#1A66FF]/30 transition-all duration-200 flex items-center justify-center"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span className="hidden sm:inline ml-1.5 text-sm">Add Asset</span>
+                    </Button>
+                  </div>
+                  {/* Bottom row: Filter */}
+                  <div className="w-full sm:w-44">
+                    <div className="relative">
+                      <select
                         value={filterCategory}
-                        onChange={setFilterCategory}
-                        options={[
-                          { label: "All Categories", value: "All" },
-                          { label: "Hardware", value: "Hardware" },
-                          { label: "Software", value: "Software" },
-                        ]}
-                      />
+                        onChange={(e) => setFilterCategory(e.target.value)}
+                        className="w-full bg-[#0a0a0a]/80 border border-white/10 rounded-xl px-4 py-2 text-sm text-white appearance-none cursor-pointer focus:outline-none focus:border-[#D3FF33]/50 transition-all hover:border-white/20"
+                      >
+                        <option value="All">All Categories</option>
+                        <option value="Hardware">Hardware</option>
+                        <option value="Software">Software</option>
+                      </select>
+                      <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </div>
                   </div>
-                  {/* Branded Add Button */}
-                  <Button
-                    onClick={handleOpenAdd}
-                    className="bg-[#1A66FF] text-white hover:bg-blue-600 rounded-xl h-10 px-6 font-medium w-full sm:w-auto"
-                  >
-                    + Add Asset
-                  </Button>
                 </div>
               </div>
 

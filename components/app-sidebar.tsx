@@ -12,13 +12,13 @@ import {
 
 export function Logo() {
   return (
-    <div className="fixed left-8 top-8 z-50">
+    <div className="fixed left-4 top-4 md:left-8 md:top-8 z-50">
       <Image
         src="/Blue White Professional Minimal Brand Logo.png"
         alt="Logo"
         width={40}
         height={40}
-        className="w-10 h-10 object-contain"
+        className="w-8 h-8 md:w-10 md:h-10 object-contain"
       />
     </div>
   )
@@ -33,7 +33,7 @@ const navItems = [
 
 export function AppSidebar() {
   return (
-    <aside className="fixed left-6 top-1/2 -translate-y-1/2 z-50 h-auto min-h-[320px] w-20 bg-[#111111]/90 backdrop-blur-xl rounded-full shadow-2xl border border-white/10 py-4 flex flex-col items-center justify-center gap-4">
+    <aside className="hidden md:flex fixed left-6 top-1/2 -translate-y-1/2 z-50 h-auto min-h-[320px] w-20 bg-[#111111]/90 backdrop-blur-xl rounded-full shadow-2xl border border-white/10 py-4 flex-col items-center justify-center gap-4">
       {navItems.map((item, index) => (
         <a
           key={index}

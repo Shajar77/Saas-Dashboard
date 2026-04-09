@@ -63,19 +63,19 @@ export function CustomTable({
 
   return (
     <div className="w-full flex justify-start flex-col gap-4">
-      <div className="overflow-hidden rounded-3xl border border-white/5 bg-[#1c1c1e]">
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#1c1c1e]/80 backdrop-blur-md shadow-xl">
         <table className="w-full text-sm text-left align-middle border-collapse h-px table-auto">
-          <thead className="bg-[#D3FF33] border-b border-[#D3FF33]/20 text-black uppercase text-xs">
+          <thead className="bg-gradient-to-r from-[#D3FF33] to-[#b8e62c] border-b border-white/10 text-black uppercase text-xs">
             <tr>
-              {columns.map((col) => (
+              {columns.map((col, idx) => (
                 <th
                   key={col.key}
                   onClick={() =>
                     (sortable && col.sortable !== false) ? handleSort(col.key) : undefined
                   }
-                  className={`p-4 font-medium tracking-wider select-none ${
+                  className={`p-2 md:p-4 font-bold tracking-wider select-none ${
                     sortable && col.sortable !== false ? "cursor-pointer hover:bg-white/10" : ""
-                  }`}
+                  } ${col.key === 'id' ? 'hidden md:table-cell w-12' : ''} ${col.key === 'category' ? 'hidden sm:table-cell' : ''} ${col.key === 'status' ? 'hidden lg:table-cell' : ''}`}
                 >
                   <div className="flex items-center gap-1">
                     {col.label}
@@ -86,8 +86,8 @@ export function CustomTable({
                 </th>
               ))}
               {hasActions && (
-                <th className="p-4 font-medium text-right tracking-wider">
-                  <span className="sr-only">Actions</span>
+                <th className="p-2 md:p-4 font-bold text-right tracking-wider">
+                  Actions
                 </th>
               )}
             </tr>
@@ -101,37 +101,34 @@ export function CustomTable({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
-                  className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+                  className="border-b border-white/5 hover:bg-white/[0.03] transition-all duration-200"
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className="py-5 px-4">
+                    <td 
+                      key={col.key} 
+                      className={`py-3 px-2 md:py-5 md:px-4 ${col.key === 'id' ? 'hidden md:table-cell' : ''} ${col.key === 'category' ? 'hidden sm:table-cell' : ''} ${col.key === 'status' ? 'hidden lg:table-cell' : ''} ${col.key === 'name' ? 'max-w-[120px] lg:max-w-none truncate' : ''}`}
+                    >
                       {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}
                   {hasActions && (
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="p-2 md:p-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
                         {onEdit && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <button
                             onClick={() => onEdit(row)}
-                            className="h-8 w-8 bg-transparent text-gray-500 hover:text-blue-400 hover:bg-transparent"
+                            className="h-7 w-7 md:h-8 md:w-8 rounded-md bg-white/5 border border-white/10 text-gray-400 hover:text-[#D3FF33] hover:border-[#D3FF33]/30 hover:bg-[#D3FF33]/10 transition-all duration-200 flex items-center justify-center"
                           >
-                            <Edit2 className="w-4 h-4" />
-                            <span className="sr-only">Edit</span>
-                          </Button>
+                            <Edit2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                          </button>
                         )}
                         {onDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <button
                             onClick={() => onDelete(row)}
-                            className="h-8 w-8 bg-transparent text-gray-500 hover:text-red-400 hover:bg-transparent"
+                            className="h-7 w-7 md:h-8 md:w-8 rounded-md bg-white/5 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/10 transition-all duration-200 flex items-center justify-center"
                           >
-                            <Trash2 className="w-4 h-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
+                            <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                          </button>
                         )}
                       </div>
                     </td>
@@ -143,9 +140,14 @@ export function CustomTable({
               <tr>
                 <td
                   colSpan={columns.length + (hasActions ? 1 : 0)}
-                  className="p-8 text-center text-muted-foreground"
+                  className="p-12 text-center text-gray-500"
                 >
-                  No records to display.
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>No records to display</span>
+                  </div>
                 </td>
               </tr>
             )}
@@ -154,29 +156,31 @@ export function CustomTable({
       </div>
       
       {pagination && totalPages > 1 && (
-        <div className="flex items-center justify-between px-2">
-          <div className="text-xs text-muted-foreground">
-            Page {currentPage} of {totalPages}
+        <div className="flex items-center justify-between px-3 md:px-4 py-2.5 md:py-3 bg-[#1c1c1e]/60 border border-white/10 rounded-xl backdrop-blur-sm">
+          <div className="text-xs text-gray-400 font-medium">
+            <span className="text-white">{currentPage}</span>
+            <span className="mx-1">/</span>
+            <span className="text-white">{totalPages}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="h-8 border-white/10 text-xs"
+              className="h-7 md:h-8 w-7 md:w-8 md:px-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center"
             >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="h-8 border-white/10 text-xs"
+              className="h-7 md:h-8 w-7 md:w-8 md:px-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center"
             >
-              Next
-            </Button>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
