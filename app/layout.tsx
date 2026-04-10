@@ -14,8 +14,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'SaaS Asset Dashboard',
-  description: 'Professional dashboard for managing hardware and software assets',
+  title: 'Flux',
+  description: 'Premium Asset Management Dashboard',
   icons: {
     icon: [
       {

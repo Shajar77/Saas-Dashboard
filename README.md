@@ -1,6 +1,6 @@
-# SaaS Asset Dashboard
+# Flux
 
-A professional, high-fidelity asset management platform built with Next.js 15, Tailwind CSS, and Framer Motion. This system provides a centralized interface for tracking organizational hardware and software assets with a premium, high-performance UI.
+Flux is a professional, high-fidelity asset management platform built with Next.js 15, Tailwind CSS, and Framer Motion. This system provides a centralized interface for tracking organizational hardware and software assets with a premium, high-performance UI.
 
 ---
 
