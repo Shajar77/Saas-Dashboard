@@ -19,15 +19,22 @@ export type AssetDetails = {
   warrantyMonths: number
 }
 
+interface JsonPlaceholderPost {
+  id: number
+  userId: number
+  title: string
+  body: string
+}
+
 export async function fetchAssets(): Promise<Asset[]> {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts?_limit=15")
     if (!response.ok) {
       throw new Error("Failed to fetch assets")
     }
-    const data = await response.json()
+    const data: JsonPlaceholderPost[] = await response.json()
 
-    return data.map((item: any, index: number) => ({
+    return data.map((item, index) => ({
       id: item.id,
       name: item.title.slice(0, 30), // Shorten the title for cleaner UI
       category: index % 2 === 0 ? "Hardware" : "Software",

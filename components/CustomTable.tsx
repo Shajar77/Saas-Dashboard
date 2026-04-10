@@ -3,26 +3,26 @@ import { motion, AnimatePresence } from "framer-motion"
 import { IconChevronUp, IconChevronDown } from "@tabler/icons-react"
 import { Edit2, Trash2, ChevronDown, ChevronUp } from "lucide-react"
 
-export interface TableColumn {
+export interface TableColumn<T = Record<string, unknown>> {
   key: string
   label: string
   sortable?: boolean
-  render?: (row: any) => React.ReactNode
+  render?: (row: T) => React.ReactNode
 }
 
-export interface CustomTableProps {
-  data: any[]
-  columns: TableColumn[]
+export interface CustomTableProps<T extends { id: number }> {
+  data: T[]
+  columns: TableColumn<T>[]
   sortable?: boolean
   pagination?: boolean
   pageSize?: number
-  onEdit?: (row: any) => void
-  onDelete?: (row: any) => void
+  onEdit?: (row: T) => void
+  onDelete?: (row: T) => void
   expandable?: boolean
-  renderExpanded?: (row: any) => React.ReactNode
+  renderExpanded?: (row: T) => React.ReactNode
 }
 
-export function CustomTable({
+export function CustomTable<T extends { id: number }>({
   data,
   columns,
   sortable = false,
@@ -32,7 +32,7 @@ export function CustomTable({
   onDelete,
   expandable = false,
   renderExpanded,
-}: CustomTableProps) {
+}: CustomTableProps<T>) {
   const [sortKey, setSortKey] = React.useState<string | null>(null)
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc")
   const [currentPage, setCurrentPage] = React.useState(1)
@@ -56,8 +56,10 @@ export function CustomTable({
   const sortedData = React.useMemo(() => {
     if (!sortKey) return data
     return [...data].sort((a, b) => {
-      if (a[sortKey] < b[sortKey]) return sortDir === "asc" ? -1 : 1
-      if (a[sortKey] > b[sortKey]) return sortDir === "asc" ? 1 : -1
+      const aVal = (a as Record<string, string | number>)[sortKey]
+      const bVal = (b as Record<string, string | number>)[sortKey]
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1
       return 0
     })
   }, [data, sortKey, sortDir])
@@ -76,7 +78,7 @@ export function CustomTable({
           <thead className="bg-gradient-to-r from-[#D3FF33] to-[#b8e62c] border-b border-white/10 text-black uppercase text-xs">
             <tr>
               {expandable && <th className="p-2 md:p-4 w-10"></th>}
-              {columns.map((col, idx) => (
+              {columns.map((col) => (
                 <th
                   key={col.key}
                   onClick={() =>
@@ -135,7 +137,7 @@ export function CustomTable({
                         key={col.key} 
                         className={`py-3 px-2 md:py-5 md:px-4 ${col.key === 'id' ? 'hidden md:table-cell' : ''} ${col.key === 'category' ? 'hidden sm:table-cell' : ''} ${col.key === 'status' ? 'hidden lg:table-cell' : ''} ${col.key === 'name' ? 'max-w-[120px] lg:max-w-none truncate' : ''}`}
                       >
-                        {col.render ? col.render(row) : row[col.key]}
+                        {col.render ? col.render(row) : ((row as Record<string, unknown>)[col.key] as React.ReactNode)}
                       </td>
                     ))}
                     {hasActions && (
