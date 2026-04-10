@@ -70,16 +70,6 @@ Flux is a professional, high-fidelity asset management platform built with Next.
 
 ---
 
-## Optimization and Performance
-
-This project has been deeply optimized for performance:
-*   **Lean Architecture**: Removed ~50 unused UI components and ~30 redundant npm packages to reduce bundle size.
-*   **Tree Shaking**: Cleaned up unused imports and dead logic paths.
-*   **Dynamic Metadata**: Configured professional SEO tags and responsive viewport handling.
-*   **Component-Driven**: Built with highly reusable, prop-driven components for scalability.
-
----
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
