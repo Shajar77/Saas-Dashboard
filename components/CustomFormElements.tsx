@@ -17,6 +17,7 @@ export interface TextFieldProps {
   required?: boolean
   disabled?: boolean
   error?: string
+  type?: "text" | "number" | "email" | "password"
 }
 
 export function TextField({
@@ -27,6 +28,7 @@ export function TextField({
   required = false,
   disabled = false,
   error,
+  type = "text",
 }: TextFieldProps) {
   return (
     <div className="flex flex-col gap-2">
@@ -34,6 +36,7 @@ export function TextField({
         {label} {required && <span className="text-destructive">*</span>}
       </Label>
       <Input
+        type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

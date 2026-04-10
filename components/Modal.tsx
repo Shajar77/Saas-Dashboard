@@ -18,12 +18,18 @@ export interface ModalProps {
 export function Modal({ isOpen, onClose, title, description, children }: ModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md bg-black/50 backdrop-blur-xl border-white/10">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+      <DialogContent className="sm:max-w-md bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-white/10 shadow-2xl rounded-2xl p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-white/5">
+          <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">
+            {title}
+          </DialogTitle>
+          {description && (
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {description}
+            </DialogDescription>
+          )}
         </DialogHeader>
-        <div className="py-2">
+        <div className="px-6 py-5">
           {children}
         </div>
       </DialogContent>

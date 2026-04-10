@@ -14,9 +14,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'SaaS Asset Dashboard',
+  description: 'Professional dashboard for managing hardware and software assets',
   icons: {
     icon: [
       {
@@ -46,7 +45,7 @@ export default function RootLayout({
       <body className={`${plusJakartaSans.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
