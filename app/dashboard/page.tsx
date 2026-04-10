@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { Suspense } from "react"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
 
 import { Button } from "@/components/ui/button"
@@ -8,7 +10,9 @@ import { CustomTable } from "@/components/CustomTable"
 import { Modal } from "@/components/Modal"
 import { TextField, SelectField } from "@/components/CustomFormElements"
 
-import { fetchAssets, fetchAssetDetails, type Asset, type AssetDetails } from "@/utils/api"
+import { fetchAssetDetails, type Asset, type AssetDetails } from "@/utils/api"
+import { useAssetStore } from "@/stores/assetStore"
+import { useUIStore } from "@/stores/uiStore"
 
 // Component to handle asset details fetching and display
 function AssetDetailsPanel({ assetId, assetPrice, assetQty }: { assetId: number; assetPrice?: number; assetQty?: number }) {
@@ -87,72 +91,50 @@ function AssetDetailsPanel({ assetId, assetPrice, assetQty }: { assetId: number;
   )
 }
 
-const mockAssets: Asset[] = [
-  { id: 1, name: "MacBook Pro M3", category: "Hardware", status: "Active", price: 2499, quantity: 5 },
-  { id: 2, name: "Adobe Creative Suite", category: "Software", status: "Active", price: 599, quantity: 10 },
-  { id: 3, name: "Dell Monitor 27\"", category: "Hardware", status: "Active", price: 450, quantity: 8 },
-  { id: 4, name: "Office 365 License", category: "Software", status: "Active", price: 99, quantity: 25 },
-  { id: 5, name: "iPhone 15 Pro", category: "Hardware", status: "Inactive", price: 1199, quantity: 3 },
-  { id: 6, name: "Slack Premium", category: "Software", status: "Active", price: 150, quantity: 20 },
-  { id: 7, name: "Webcam HD Pro", category: "Hardware", status: "Active", price: 129, quantity: 12 },
-  { id: 8, name: "AWS Credits", category: "Software", status: "Active", price: 500, quantity: 1 },
-  { id: 9, name: "Standing Desk", category: "Hardware", status: "Inactive", price: 350, quantity: 4 },
-  { id: 10, name: "Zoom Pro", category: "Software", status: "Active", price: 180, quantity: 15 },
-]
+function DashboardPage() {
+  // URL State for filters
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const searchQuery = searchParams.get("search") || ""
+  const filterCategory = searchParams.get("category") || "All"
 
-export default function DashboardPage() {
-  const [assets, setAssets] = React.useState<Asset[]>([])
-  const [loading, setLoading] = React.useState(true)
-
-  // Filters
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const [filterCategory, setFilterCategory] = React.useState("All")
-
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = React.useState(false)
-  const [editingAsset, setEditingAsset] = React.useState<Asset | null>(null)
-  
-  // Delete Confirmation State
-  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false)
-  const [assetToDelete, setAssetToDelete] = React.useState<Asset | null>(null)
-
-  // Form State
-  const [formData, setFormData] = React.useState({
-    name: "",
-    category: "Hardware" as "Hardware" | "Software",
-    status: "Active" as "Active" | "Inactive",
-    price: 500,
-    quantity: 1,
-  })
-
-  // Load assets from JSON placeholder on mount
-  React.useEffect(() => {
-    async function loadData() {
-      try {
-        const data = await fetchAssets()
-        // Add default prices/quantities to fetched data
-        const assetsWithDefaults = data.map((asset, index) => ({
-          ...asset,
-          price: mockAssets[index % mockAssets.length]?.price || 500,
-          quantity: mockAssets[index % mockAssets.length]?.quantity || 1,
-        }))
-        setAssets(assetsWithDefaults.length > 0 ? assetsWithDefaults : mockAssets)
-      } catch (error) {
-        console.error("Failed to fetch assets:", error)
-        setAssets(mockAssets)
-      } finally {
-        setLoading(false)
+  // Update URL params helper
+  const updateSearchParams = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === "" || value === "All") {
+        params.delete(key)
+      } else {
+        params.set(key, value)
       }
-    }
-    loadData()
-  }, [])
+    })
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
 
-  // Save assets to localStorage whenever they change
+  const setSearchQuery = (query: string) => updateSearchParams({ search: query })
+  const setFilterCategory = (category: string) => updateSearchParams({ category })
+
+  // Zustand Stores
+  const { assets, loading, fetchAssetsFromApi, addAsset, updateAsset, deleteAsset } = useAssetStore()
+  const {
+    isModalOpen,
+    editingAsset,
+    openAddModal,
+    openEditModal,
+    closeModal,
+    deleteModalOpen,
+    assetToDelete,
+    openDeleteModal,
+    closeDeleteModal,
+    formData,
+    setFormData,
+  } = useUIStore()
+
+  // Load assets on mount
   React.useEffect(() => {
-    if (assets.length > 0) {
-      localStorage.setItem("dashboard_assets", JSON.stringify(assets))
-    }
-  }, [assets])
+    fetchAssetsFromApi()
+  }, [fetchAssetsFromApi])
 
   const filteredAssets = React.useMemo(() => {
     return assets.filter((asset) => {
@@ -235,56 +217,37 @@ export default function DashboardPage() {
   }, [assets])
 
   const handleEdit = (asset: Asset) => {
-    setEditingAsset(asset)
-    setFormData({
-      name: asset.name,
-      category: asset.category,
-      status: asset.status,
-      price: asset.price || (asset.category === "Hardware" ? 2000 : 500),
-      quantity: asset.quantity || 1,
-    })
-    setIsModalOpen(true)
+    openEditModal(asset)
   }
 
   const handleDelete = (asset: Asset) => {
-    setAssetToDelete(asset)
-    setDeleteModalOpen(true)
+    openDeleteModal(asset)
   }
-  
+
   const confirmDelete = () => {
     if (assetToDelete) {
-      setAssets((prev) => prev.filter((a) => a.id !== assetToDelete.id))
-      setAssetToDelete(null)
-      setDeleteModalOpen(false)
+      deleteAsset(assetToDelete.id)
+      closeDeleteModal()
     }
   }
-  
+
   const cancelDelete = () => {
-    setAssetToDelete(null)
-    setDeleteModalOpen(false)
+    closeDeleteModal()
   }
 
   const handleOpenAdd = () => {
-    setEditingAsset(null)
-    setFormData({ name: "", category: "Hardware", status: "Active", price: 500, quantity: 1 })
-    setIsModalOpen(true)
+    openAddModal()
   }
 
   const handleSave = () => {
     if (!formData.name) return // simple validation
-    
+
     if (editingAsset) {
-      setAssets((prev) =>
-        prev.map((a) => (a.id === editingAsset.id ? { ...a, ...formData } : a))
-      )
+      updateAsset(editingAsset.id, formData)
     } else {
-      const newAsset: Asset = {
-        id: Math.max(0, ...assets.map((a) => a.id)) + 1,
-        ...formData,
-      }
-      setAssets([newAsset, ...assets])
+      addAsset(formData)
     }
-    setIsModalOpen(false)
+    closeModal()
   }
 
   const columns = [
@@ -592,7 +555,7 @@ export default function DashboardPage() {
         {/* Modal */}
         <Modal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => closeModal()}
           title={editingAsset ? "Edit Asset" : "Add New Asset"}
           description={editingAsset ? "Modify the details for this asset." : "Fill out the fields to register a new asset."}
         >
@@ -643,7 +606,7 @@ export default function DashboardPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              <Button variant="outline" onClick={() => closeModal()}>
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={!formData.name}>
@@ -674,5 +637,14 @@ export default function DashboardPage() {
           </div>
         </Modal>
     </div>
+  )
+}
+
+// Wrapper with Suspense for useSearchParams
+export default function DashboardPageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
+      <DashboardPage />
+    </Suspense>
   )
 }
